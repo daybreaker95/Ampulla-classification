@@ -23,7 +23,7 @@ for file_name in os.listdir(folder_path):
         else:
             print(f"형식이 맞지 않음: {file_name}")
 
-###########################
+##############################
 
 # 파일 이름을 "'등록번호' '이름' 'collection_rate_class'"으로 변경합니다.
 
@@ -35,31 +35,32 @@ folder_path = '/content/drive/MyDrive/박도현 교수ᄂ�
 
 # 폴더 내의 모든 파일 이름 변경
 for file_name in os.listdir(folder_path):
-    old_path = os.path.join(folder_path, file_name)  
+    old_path = os.path.join(folder_path, file_name)
     # 파일 이름에서 등록번호 추출
     file_reg_num = file_name.split(' ')[0]  # 파일 이름의 등록번호
     file_reg_num = str(file_reg_num)  # file_reg_num을 문자열로 변환
     df['등록번호'] = df['등록번호'].astype(str)  # df['등록번호']를 문자열로 변환
 
-    
+
     # 등록번호와 일치하는 인덱스 찾기
     matching_index = df[df['등록번호'] == file_reg_num].index
-    
+
     if not matching_index.empty:
         # collection_rate_class 값 추출
         collection_rate_class = df.at[matching_index[0], 'collection_rate_class']  # 인덱스를 사용하여 값 추출
         # 새로운 파일 이름 생성
         new_file_name = f"{file_name} {collection_rate_class}"  # 기존 파일 이름에 추가
         new_path = os.path.join(folder_path, new_file_name)
-        
+
         # 파일 이름 변경
         os.rename(old_path, new_path)
         print(f"변경됨: {old_path} -> {new_path}")
     else:
         print(f"일치하는 등록번호 없음: {file_reg_num}")
 
+##############################
 
-##########################
+# 파일을 train_test_split method를 통해 'train', 'val' 폴더에 분류합니다. stratified by 'collection_rate_class'.
 
 from sklearn.model_selection import train_test_split
 import os
@@ -93,13 +94,16 @@ if 'collection_rate_class' in df.columns:
 else:
     print("DataFrame에 'collection_rate_class' 컬럼이 없습니다.")
 
-# 파일 복사 함수 정의
-def copy_files(file_df, target_dir):
-    os.makedirs(target_dir, exist_ok=True)  # 대상 디렉토리 생성
+# train, val 디렉토리 경로 설정
+train_dir = os.path.join(data_dir, 'train')
+val_dir = os.path.join(data_dir, 'val')
+
+def copy_files(file_df, target_dir, extension='.jpg'):
+    os.makedirs(target_dir, exist_ok=True)
     for _, row in file_df.iterrows():
         src_path = os.path.join(data_dir, row['file_name'])
         dst_path = os.path.join(target_dir, row['file_name'])
-        os.makedirs(os.path.dirname(dst_path), exist_ok=True)  # 복사할 파일의 폴더 구조 생성
+        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
         shutil.copy(src_path, dst_path)
 
 # train, val 디렉토리에 파일 복사
@@ -108,9 +112,7 @@ copy_files(val_df, val_dir)
 
 print("파일 분류가 완료되었습니다.")
 
-
-#######################################
-
+###########################################
 
 import os
 import shutil
@@ -134,9 +136,14 @@ def organize_files_by_class(directory):
         if os.path.isfile(os.path.join(directory, file_name)):
             # '등록번호', '이름', 'collection_rate_class'로 구분
             parts = file_name.split(' ')
-            if len(parts) == 3:  # 형식이 올바른 파일만 사용
-                reg_num, name, collection_rate_class = parts[0], parts[1], parts[2].split('.')[0]  # 확장자 제거
-                file_info.append({'file_name': file_name, 'reg_num': reg_num, 'name': name, 'collection_rate_class': collection_rate_class})
+            reg_num, name = parts[0], parts[1]
+            collection_rate_class = parts[2].split('.')[0]  # 확장자를 제외한 collection_rate_class만 추출
+            file_info.append({
+                'file_name': file_name,  # 파일 전체 이름을 저장하여 확장자 포함
+                'reg_num': reg_num,
+                'name': name,
+                'collection_rate_class': collection_rate_class
+            })
 
     # DataFrame 생성
     df = pd.DataFrame(file_info)
@@ -149,9 +156,9 @@ def organize_files_by_class(directory):
         # 파일 이동
         src_path = os.path.join(directory, row['file_name'])
         dst_path = os.path.join(target_class_dir, row['file_name'])
-        shutil.move(src_path, dst_path)
+        shutil.copy(src_path, dst_path)
 
-    print(f"{directory} 폴더 내의 파일들이 collection_rate_class별로 폴더에 저장되었습니다.")
+    print(f"{directory} 폴더 내의 이미지 파일들이 collection_rate_class별로 폴더에 저장되었습니다.")
 
 # train 및 val 폴더 내 파일 정리
 organize_files_by_class(train_dir)
